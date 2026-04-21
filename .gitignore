@@ -12,7 +12,7 @@ test-results/
 /.claude/
 
 # Node modules and dependency files
-/node_modules/
+**/node_modules/
 /package-lock.json
 /yarn.lock
 
