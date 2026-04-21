@@ -1,63 +1,54 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreatePersonDto } from './dto/create-person.dto';
-import { UpdatePersonDto } from './dto/update-person.dto';
-
-const PERSON_INCLUDE = {
-  notes: { orderBy: { createdAt: 'desc' as const } },
-  facts: { orderBy: { createdAt: 'asc' as const } },
-  events: { orderBy: { date: 'asc' as const } },
-};
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, ILike } from 'typeorm';
+import { Person } from './person.entity';
+import { CreatePersonDto, UpdatePersonDto } from './person.dto';
 
 @Injectable()
 export class PersonsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@InjectRepository(Person) private repo: Repository<Person>) {}
 
-  findAll(userId: string) {
-    return this.prisma.person.findMany({
+  findAll(userId: string, search?: string): Promise<Person[]> {
+    if (search) {
+      return this.repo.find({
+        where: [
+          { userId, name: ILike(`%${search}%`) },
+          { userId, occupation: ILike(`%${search}%`) },
+        ],
+        relations: ['facts', 'events'],
+        order: { updatedAt: 'DESC' },
+      });
+    }
+    return this.repo.find({
       where: { userId },
-      include: PERSON_INCLUDE,
-      orderBy: { updatedAt: 'desc' },
+      relations: ['facts', 'events'],
+      order: { updatedAt: 'DESC' },
     });
   }
 
-  async findOne(id: string, userId: string) {
-    const person = await this.prisma.person.findFirst({
-      where: { id, userId },
-      include: PERSON_INCLUDE,
-    });
-    if (!person) throw new NotFoundException(`Person ${id} not found`);
-    return person;
+  findAllAdmin(): Promise<Person[]> {
+    return this.repo.find({ relations: ['facts', 'events'], order: { updatedAt: 'DESC' } });
   }
 
-  create(dto: CreatePersonDto, userId: string) {
-    const { id, birthday, ...rest } = dto;
-    return this.prisma.person.create({
-      data: {
-        ...(id ? { id } : {}),
-        ...rest,
-        birthday: birthday ? new Date(birthday) : undefined,
-        userId,
-      },
-      include: PERSON_INCLUDE,
-    });
+  async findOne(id: string, userId: string): Promise<Person> {
+    const p = await this.repo.findOne({ where: { id, userId }, relations: ['facts', 'events'] });
+    if (!p) throw new NotFoundException();
+    return p;
   }
 
-  async update(id: string, dto: UpdatePersonDto, userId: string) {
-    await this.findOne(id, userId);
-    const { birthday, id: _id, ...rest } = dto;
-    return this.prisma.person.update({
-      where: { id },
-      data: {
-        ...rest,
-        birthday: birthday ? new Date(birthday) : undefined,
-      },
-      include: PERSON_INCLUDE,
-    });
+  create(dto: CreatePersonDto): Promise<Person> {
+    const p = this.repo.create(dto);
+    return this.repo.save(p);
   }
 
-  async remove(id: string, userId: string) {
-    await this.findOne(id, userId);
-    return this.prisma.person.delete({ where: { id } });
+  async update(id: string, userId: string, dto: UpdatePersonDto): Promise<Person> {
+    const p = await this.findOne(id, userId);
+    Object.assign(p, dto);
+    return this.repo.save(p);
+  }
+
+  async remove(id: string, userId: string): Promise<void> {
+    const p = await this.findOne(id, userId);
+    await this.repo.remove(p);
   }
 }

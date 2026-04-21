@@ -1,39 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { PersonsService } from '../persons/persons.service';
-import { CreateEventDto } from './dto/create-event.dto';
-import { UpdateEventDto } from './dto/update-event.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Event } from './event.entity';
+import { CreateEventDto, UpdateEventDto } from './event.dto';
 
 @Injectable()
 export class EventsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly personsService: PersonsService,
-  ) {}
+  constructor(@InjectRepository(Event) private repo: Repository<Event>) {}
 
-  async create(personId: string, dto: CreateEventDto, userId: string) {
-    await this.personsService.findOne(personId, userId);
-    const { id, date, ...rest } = dto;
-    return this.prisma.event.create({
-      data: { ...(id ? { id } : {}), ...rest, date: new Date(date), personId },
-    });
+  findByPerson(personId: string, userId: string): Promise<Event[]> {
+    return this.repo.find({ where: { personId, userId }, order: { date: 'ASC' } });
   }
 
-  async update(personId: string, eventId: string, dto: UpdateEventDto, userId: string) {
-    await this.personsService.findOne(personId, userId);
-    const event = await this.prisma.event.findFirst({ where: { id: eventId, personId } });
-    if (!event) throw new NotFoundException(`Event ${eventId} not found`);
-    const { date, ...rest } = dto;
-    return this.prisma.event.update({
-      where: { id: eventId },
-      data: { ...rest, ...(date ? { date: new Date(date) } : {}) },
-    });
+  async findOne(id: string, userId: string): Promise<Event> {
+    const e = await this.repo.findOne({ where: { id, userId } });
+    if (!e) throw new NotFoundException();
+    return e;
   }
 
-  async remove(personId: string, eventId: string, userId: string) {
-    await this.personsService.findOne(personId, userId);
-    const event = await this.prisma.event.findFirst({ where: { id: eventId, personId } });
-    if (!event) throw new NotFoundException(`Event ${eventId} not found`);
-    return this.prisma.event.delete({ where: { id: eventId } });
+  create(dto: CreateEventDto): Promise<Event> {
+    const e = this.repo.create(dto);
+    return this.repo.save(e);
+  }
+
+  async update(id: string, userId: string, dto: UpdateEventDto): Promise<Event> {
+    const e = await this.findOne(id, userId);
+    Object.assign(e, dto);
+    return this.repo.save(e);
+  }
+
+  async remove(id: string, userId: string): Promise<void> {
+    const e = await this.findOne(id, userId);
+    await this.repo.remove(e);
   }
 }
