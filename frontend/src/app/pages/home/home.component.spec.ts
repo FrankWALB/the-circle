@@ -7,7 +7,7 @@ import { HomeComponent } from './home.component';
 
 function makeRouter()    { return { navigate: jest.fn() }; }
 function makeDialog()    {
-  const ref = { afterClosed: () => ({ subscribe: (cb: Function) => cb(false) }) };
+  const ref = { afterClosed: () => ({ subscribe: (cb: (v: unknown) => void) => cb(false) }) };
   return { open: jest.fn().mockReturnValue(ref) };
 }
 function makePersonsSvc(persons: any[] = []) {

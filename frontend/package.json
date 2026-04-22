@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "jest",
-    "lint": "ng lint"
+    "lint": "eslint \"src/**/*.ts\""
   },
   "dependencies": {
     "@angular/animations": "^21.2.9",
@@ -31,6 +31,9 @@
     "@angular/compiler-cli": "^21.2.9",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
+    "eslint": "^10.2.1",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "ts-jest": "^29.4.9",
