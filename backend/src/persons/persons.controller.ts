@@ -1,43 +1,38 @@
-import {
-  Controller, Get, Post, Put, Delete,
-  Param, Body, HttpCode, HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { PersonsService } from './persons.service';
-import { CreatePersonDto } from './dto/create-person.dto';
-import { UpdatePersonDto } from './dto/update-person.dto';
-import { UserId } from '../common/user-id.decorator';
+import { CreatePersonDto, UpdatePersonDto } from './person.dto';
 
 @Controller('persons')
 export class PersonsController {
-  constructor(private readonly personsService: PersonsService) {}
+  constructor(private service: PersonsService) {}
 
   @Get()
-  findAll(@UserId() userId: string) {
-    return this.personsService.findAll(userId);
+  findAll(@Query('userId') userId: string, @Query('search') search?: string) {
+    return this.service.findAll(userId, search);
+  }
+
+  @Get('admin')
+  findAllAdmin() {
+    return this.service.findAllAdmin();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @UserId() userId: string) {
-    return this.personsService.findOne(id, userId);
+  findOne(@Param('id') id: string, @Query('userId') userId: string) {
+    return this.service.findOne(id, userId);
   }
 
   @Post()
-  create(@Body() dto: CreatePersonDto, @UserId() userId: string) {
-    return this.personsService.create(dto, userId);
+  create(@Body() dto: CreatePersonDto) {
+    return this.service.create(dto);
   }
 
   @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdatePersonDto,
-    @UserId() userId: string,
-  ) {
-    return this.personsService.update(id, dto, userId);
+  update(@Param('id') id: string, @Query('userId') userId: string, @Body() dto: UpdatePersonDto) {
+    return this.service.update(id, userId, dto);
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @UserId() userId: string) {
-    return this.personsService.remove(id, userId);
+  remove(@Param('id') id: string, @Query('userId') userId: string) {
+    return this.service.remove(id, userId);
   }
 }

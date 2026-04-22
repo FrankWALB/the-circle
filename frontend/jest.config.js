@@ -8,8 +8,10 @@ module.exports = {
     }],
   },
   moduleNameMapper: {
-    '^@angular/core$': '<rootDir>/__mocks__/angular-core.js',
+    // Specific mocks must come before the catch-all
+    '^@angular/core$':        '<rootDir>/__mocks__/angular-core.js',
     '^@angular/common/http$': '<rootDir>/__mocks__/angular-common-http.js',
-    '^uuid$': '<rootDir>/__mocks__/uuid.js',
+    '^@angular/(.*)$':        '<rootDir>/__mocks__/angular-generic.js',
+    '^uuid$':                 '<rootDir>/__mocks__/uuid.js',
   },
 };
