@@ -1,6 +1,6 @@
 # Angular specific
-/dist/
-/out-tsc/
+**/dist/
+**/out-tsc/
 /tmp/
 /coverage/
 /e2e/test-output/
