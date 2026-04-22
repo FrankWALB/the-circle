@@ -49,7 +49,9 @@ export class PersonsService {
           await db.persons.put({ ...saved, synced: true });
           return saved;
         }
-      } catch {}
+      } catch (err) {
+        console.warn('[PersonsService] create sync failed:', err);
+      }
     }
     return person;
   }
@@ -59,9 +61,11 @@ export class PersonsService {
     await db.persons.update(id, { ...updates, updatedAt: now, synced: false });
     if (navigator.onLine) {
       try {
-        await this.http.put(`${environment.apiUrl}/persons/${id}?userId=${this.userService.userId}`, updates).toPromise();
+        await this.http.put(`${environment.apiUrl}/persons/${id}`, updates).toPromise();
         await db.persons.update(id, { synced: true });
-      } catch {}
+      } catch (err) {
+        console.warn('[PersonsService] update sync failed:', err);
+      }
     }
   }
 
@@ -69,8 +73,10 @@ export class PersonsService {
     await db.persons.delete(id);
     if (navigator.onLine) {
       try {
-        await this.http.delete(`${environment.apiUrl}/persons/${id}?userId=${this.userService.userId}`).toPromise();
-      } catch {}
+        await this.http.delete(`${environment.apiUrl}/persons/${id}`).toPromise();
+      } catch (err) {
+        console.warn('[PersonsService] delete sync failed:', err);
+      }
     }
   }
 }

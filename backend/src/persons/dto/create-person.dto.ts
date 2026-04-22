@@ -34,5 +34,9 @@ export class CreatePersonDto {
 
   @IsOptional()
   @IsString()
+  metAt?: string;
+
+  @IsOptional()
+  @IsString()
   id?: string;
 }

@@ -1,36 +1,46 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Fact } from './fact.entity';
-import { CreateFactDto, UpdateFactDto } from './fact.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateFactDto } from './dto/create-fact.dto';
+import { UpdateFactDto } from './dto/update-fact.dto';
 
 @Injectable()
 export class FactsService {
-  constructor(@InjectRepository(Fact) private repo: Repository<Fact>) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  findByPerson(personId: string, userId: string): Promise<Fact[]> {
-    return this.repo.find({ where: { personId, userId }, order: { updatedAt: 'DESC' } });
+  findByPerson(personId: string, userId: string) {
+    return this.prisma.fact.findMany({
+      where: { personId, person: { userId } },
+      orderBy: { createdAt: 'asc' },
+    });
   }
 
-  async findOne(id: string, userId: string): Promise<Fact> {
-    const f = await this.repo.findOne({ where: { id, userId } });
-    if (!f) throw new NotFoundException();
-    return f;
+  async findOne(id: string, userId: string) {
+    const fact = await this.prisma.fact.findFirst({ where: { id, person: { userId } } });
+    if (!fact) throw new NotFoundException(`Fact ${id} not found`);
+    return fact;
   }
 
-  create(dto: CreateFactDto): Promise<Fact> {
-    const f = this.repo.create(dto);
-    return this.repo.save(f);
+  async create(dto: CreateFactDto, userId: string) {
+    const person = await this.prisma.person.findFirst({ where: { id: dto.personId, userId } });
+    if (!person) throw new NotFoundException(`Person ${dto.personId} not found`);
+    return this.prisma.fact.create({
+      data: {
+        ...(dto.id ? { id: dto.id } : {}),
+        personId: dto.personId,
+        key: dto.key,
+        value: dto.value,
+        category: dto.category,
+      },
+    });
   }
 
-  async update(id: string, userId: string, dto: UpdateFactDto): Promise<Fact> {
-    const f = await this.findOne(id, userId);
-    Object.assign(f, dto);
-    return this.repo.save(f);
+  async update(id: string, userId: string, dto: UpdateFactDto) {
+    const fact = await this.findOne(id, userId);
+    return this.prisma.fact.update({ where: { id: fact.id }, data: dto });
   }
 
-  async remove(id: string, userId: string): Promise<void> {
-    const f = await this.findOne(id, userId);
-    await this.repo.remove(f);
+  async remove(id: string, userId: string) {
+    const fact = await this.findOne(id, userId);
+    await this.prisma.fact.delete({ where: { id: fact.id } });
   }
 }

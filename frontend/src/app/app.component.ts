@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -22,17 +22,22 @@ import { SyncService } from './services/sync.service';
     <router-outlet></router-outlet>
   `,
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   online = navigator.onLine;
+
+  private readonly onOnline = () => { this.online = true; this.syncService.syncAll(); };
+  private readonly onOffline = () => { this.online = false; };
 
   constructor(private syncService: SyncService) {}
 
   ngOnInit() {
-    window.addEventListener('online', () => {
-      this.online = true;
-      this.syncService.syncAll();
-    });
-    window.addEventListener('offline', () => { this.online = false; });
+    window.addEventListener('online', this.onOnline);
+    window.addEventListener('offline', this.onOffline);
     this.syncService.syncAll();
+  }
+
+  ngOnDestroy() {
+    window.removeEventListener('online', this.onOnline);
+    window.removeEventListener('offline', this.onOffline);
   }
 }

@@ -32,6 +32,7 @@ model Person {
   location   String?
   phone      String?
   email      String?
+  metAt      String?
   notes      Note[]
   facts      Fact[]
   events     Event[]
@@ -60,6 +61,7 @@ model Fact {
   person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
   key       String
   value     String
+  category  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -74,6 +76,7 @@ model Event {
   title     String
   date      DateTime
   recurring Boolean  @default(false)
+  notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
