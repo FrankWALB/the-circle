@@ -7,7 +7,6 @@
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
-          "style": "scss",
           "standalone": true
         }
       },
@@ -16,34 +15,41 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:application",
+          "builder": "@angular-devkit/build-angular:browser",
           "options": {
             "outputPath": "dist/the-circle",
             "index": "src/index.html",
-            "browser": "src/main.ts",
+            "main": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
-              { "glob": "**/*", "input": "public" },
-              "src/manifest.webmanifest"
+              "src/favicon.ico",
+              "src/assets",
+              "src/manifest.webmanifest",
+              { "glob": "ngsw-worker.js", "input": "./node_modules/@angular/service-worker", "output": "/" }
             ],
             "styles": ["src/styles.scss"],
             "scripts": [],
-            "serviceWorker": "src/ngsw-config.json"
+            "serviceWorker": true,
+            "ngswConfigPath": "ngsw-config.json"
           },
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "500kB", "maximumError": "1MB" },
-                { "type": "anyComponentStyle", "maximumWarning": "4kB", "maximumError": "8kB" }
+                { "type": "initial", "maximumWarning": "500kb", "maximumError": "2mb" },
+                { "type": "anyComponentStyle", "maximumWarning": "2kb", "maximumError": "4kb" }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": true,
+              "sourceMap": false,
+              "fileReplacements": [
+                { "replace": "src/environments/environment.ts", "with": "src/environments/environment.prod.ts" }
+              ]
             },
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true,
-              "serviceWorker": false
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
@@ -54,29 +60,7 @@
             "production": { "buildTarget": "the-circle:build:production" },
             "development": { "buildTarget": "the-circle:build:development" }
           },
-          "defaultConfiguration": "development",
-          "options": {
-            "proxyConfig": "src/proxy.conf.json"
-          }
-        },
-        "test": {
-          "builder": "@angular-devkit/build-angular:karma",
-          "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "tsconfig.spec.json",
-            "assets": [
-              { "glob": "**/*", "input": "public" },
-              "src/manifest.webmanifest"
-            ],
-            "styles": ["src/styles.scss"],
-            "scripts": []
-          }
-        },
-        "lint": {
-          "builder": "@angular-eslint/builder:lint",
-          "options": {
-            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
-          }
+          "defaultConfiguration": "development"
         }
       }
     }
