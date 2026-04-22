@@ -6,6 +6,7 @@ export interface Person {
   name: string;
   occupation?: string;
   notes?: string;
+  metAt?: string;
   createdAt: string;
   updatedAt: string;
   synced?: boolean;

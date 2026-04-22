@@ -34,7 +34,11 @@ import { ResolveDialogComponent } from '../../components/resolve-dialog/resolve-
         <mat-card *ngFor="let p of persons" class="person-card" (click)="openPerson(p)">
           <mat-card-header>
             <mat-card-title data-testid="person-name">{{p.name}}</mat-card-title>
-            <mat-card-subtitle *ngIf="p.occupation">{{p.occupation}}</mat-card-subtitle>
+            <mat-card-subtitle *ngIf="p.occupation || p.metAt">
+              <span *ngIf="p.occupation">{{p.occupation}}</span>
+              <span *ngIf="p.occupation && p.metAt"> · </span>
+              <span *ngIf="p.metAt">Kennt: {{p.metAt}}</span>
+            </mat-card-subtitle>
           </mat-card-header>
           <mat-card-content *ngIf="p.notes">
             <p>{{p.notes}}</p>

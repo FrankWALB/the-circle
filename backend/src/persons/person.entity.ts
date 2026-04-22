@@ -19,6 +19,9 @@ export class Person {
   @Column({ nullable: true })
   notes?: string;
 
+  @Column({ nullable: true })
+  metAt?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

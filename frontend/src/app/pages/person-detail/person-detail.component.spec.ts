@@ -189,6 +189,16 @@ describe('PersonDetailComponent', () => {
     });
   });
 
+  // ── saveMetAt ───────────────────────────────────────────────────────────────
+
+  describe('saveMetAt', () => {
+    it('calls personsService.update with the current metAt value', async () => {
+      component.person!.metAt = 'Über die Uni';
+      await component.saveMetAt();
+      expect(personsSvc.update).toHaveBeenCalledWith(PERSON_ID, { metAt: 'Über die Uni' });
+    });
+  });
+
   // ── saveNotes ───────────────────────────────────────────────────────────────
 
   describe('saveNotes', () => {

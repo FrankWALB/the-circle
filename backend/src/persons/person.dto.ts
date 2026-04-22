@@ -14,6 +14,10 @@ export class CreatePersonDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  metAt?: string;
 }
 
 export class UpdatePersonDto {
@@ -28,4 +32,8 @@ export class UpdatePersonDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  metAt?: string;
 }

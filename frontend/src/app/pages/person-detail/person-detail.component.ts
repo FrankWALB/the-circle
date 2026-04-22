@@ -94,6 +94,16 @@ import { Person, Fact, CircleEvent } from '../../db';
         </mat-card-actions>
       </mat-card>
 
+      <mat-card style="margin-bottom:16px">
+        <mat-card-header><mat-card-title>Woher kenne ich diese Person?</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>z.B. Uni, Arbeit, Verein, über Maria...</mat-label>
+            <input matInput [(ngModel)]="person.metAt" (blur)="saveMetAt()" placeholder="Kontext eingeben...">
+          </mat-form-field>
+        </mat-card-content>
+      </mat-card>
+
       <mat-card>
         <mat-card-header><mat-card-title>Notizen</mat-card-title></mat-card-header>
         <mat-card-content>
@@ -167,6 +177,11 @@ export class PersonDetailComponent implements OnInit {
   async deleteEvent(e: CircleEvent) {
     await this.eventsService.delete(e.id);
     await this.loadEvents();
+  }
+
+  async saveMetAt() {
+    if (!this.person) return;
+    await this.personsService.update(this.person.id, { metAt: this.person.metAt });
   }
 
   async saveNotes() {

@@ -17,7 +17,8 @@ export class PersonsService {
       persons = persons.filter(p =>
         p.name.toLowerCase().includes(q) ||
         (p.occupation || '').toLowerCase().includes(q) ||
-        (p.notes || '').toLowerCase().includes(q)
+        (p.notes || '').toLowerCase().includes(q) ||
+        (p.metAt || '').toLowerCase().includes(q)
       );
     }
     return persons.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
