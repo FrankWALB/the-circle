@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.env.local
+.DS_Store
+*.log
+coverage/
+.angular/
+playwright-report/
+test-results/
+/.idea/
+/.claude/
