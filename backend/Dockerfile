@@ -1,14 +1,14 @@
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 RUN npm ci
-RUN DATABASE_URL=postgresql://thecircle:thecircle@postgres:5432/thecircle npx prisma generate
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
 COPY . .
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 WORKDIR /app
 ENV NODE_ENV=production
