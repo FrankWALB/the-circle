@@ -25,6 +25,10 @@
     "uuid": "^14.0.0",
     "zone.js": "^0.16.1"
   },
+  "overrides": {
+    "test-exclude": "^8.0.0",
+    "glob": "^13.0.6"
+  },
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.2.8",
     "@angular/cli": "^21.2.8",
