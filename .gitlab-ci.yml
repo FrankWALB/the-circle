@@ -16,7 +16,7 @@ variables:
 
 lint:backend:
   stage: lint
-  image: node:22-alpine
+  image: node:24-alpine
   cache:
     key: backend-$CI_COMMIT_REF_SLUG
     paths: [backend/node_modules]
@@ -26,7 +26,7 @@ lint:backend:
 
 lint:frontend:
   stage: lint
-  image: node:22-alpine
+  image: node:24-alpine
   cache:
     key: frontend-$CI_COMMIT_REF_SLUG
     paths: [frontend/node_modules]
@@ -38,7 +38,7 @@ lint:frontend:
 
 unit:backend:
   stage: unit
-  image: node:22-alpine
+  image: node:24-alpine
   cache:
     key: backend-$CI_COMMIT_REF_SLUG
     paths: [backend/node_modules]
@@ -112,7 +112,7 @@ e2e:
 
 build:frontend:
   stage: build
-  image: node:22-alpine
+  image: node:24-alpine
   cache:
     key: frontend-$CI_COMMIT_REF_SLUG
     paths: [frontend/node_modules]
