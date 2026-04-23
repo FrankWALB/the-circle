@@ -51,12 +51,12 @@ describe('SyncService', () => {
   });
 
   describe('syncAll – API call', () => {
-    it('calls the persons endpoint with the correct userId', async () => {
+    it('calls the persons endpoint (userId is sent via x-user-id header by interceptor)', async () => {
       const { service, mockHttp } = makeService(true, 'user-42');
 
       await service.syncAll();
 
-      expect(mockHttp.get).toHaveBeenCalledWith(expect.stringContaining('userId=user-42'));
+      expect(mockHttp.get).toHaveBeenCalledWith(expect.stringContaining('/persons'));
     });
 
     it('does not throw when the API request fails', async () => {

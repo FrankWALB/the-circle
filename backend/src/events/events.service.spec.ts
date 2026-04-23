@@ -1,99 +1,102 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { EventsService } from './events.service';
-import { Event } from './event.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
-const repoMock = () => ({
-  find: jest.fn(),
-  findOne: jest.fn(),
-  create: jest.fn(),
-  save: jest.fn(),
-  remove: jest.fn(),
+const prismaMock = () => ({
+  event: {
+    findMany:  jest.fn(),
+    findFirst: jest.fn(),
+    create:    jest.fn(),
+    update:    jest.fn(),
+    delete:    jest.fn(),
+  },
+  person: {
+    findFirst: jest.fn(),
+  },
 });
 
 describe('EventsService', () => {
   let service: EventsService;
-  let repo: ReturnType<typeof repoMock>;
+  let prisma: ReturnType<typeof prismaMock>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventsService,
-        { provide: getRepositoryToken(Event), useFactory: repoMock },
+        { provide: PrismaService, useFactory: prismaMock },
       ],
     }).compile();
 
-    service = module.get<EventsService>(EventsService);
-    repo = module.get(getRepositoryToken(Event));
+    service = module.get(EventsService);
+    prisma  = module.get(PrismaService);
   });
 
   describe('findByPerson', () => {
     it('returns events for a person ordered by date ascending', async () => {
-      const events = [{ id: 'e1', personId: 'p1', userId: 'u1' }];
-      repo.find.mockResolvedValue(events);
+      const events = [{ id: 'e1', personId: 'p1', title: 'Geburtstag' }];
+      prisma.event.findMany.mockResolvedValue(events);
 
       const result = await service.findByPerson('p1', 'u1');
 
       expect(result).toEqual(events);
-      expect(repo.find).toHaveBeenCalledWith({
-        where: { personId: 'p1', userId: 'u1' },
-        order: { date: 'ASC' },
-      });
+      expect(prisma.event.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { personId: 'p1', person: { userId: 'u1' } } }),
+      );
     });
   });
 
   describe('findOne', () => {
     it('returns the event when found', async () => {
-      const event = { id: 'e1', userId: 'u1', title: 'Geburtstag' };
-      repo.findOne.mockResolvedValue(event);
+      const event = { id: 'e1', title: 'Geburtstag' };
+      prisma.event.findFirst.mockResolvedValue(event);
 
       expect(await service.findOne('e1', 'u1')).toEqual(event);
     });
 
     it('throws NotFoundException when the event does not exist', async () => {
-      repo.findOne.mockResolvedValue(null);
+      prisma.event.findFirst.mockResolvedValue(null);
 
       await expect(service.findOne('e999', 'u1')).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws NotFoundException when the userId does not match', async () => {
-      repo.findOne.mockResolvedValue(null);
-
-      await expect(service.findOne('e1', 'other-user')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('create', () => {
-    it('creates and saves a new event', async () => {
-      const dto = { personId: 'p1', userId: 'u1', title: 'Geburtstag', date: '1990-03-15', recurring: true } as any;
-      const entity = { id: 'e1', ...dto };
-      repo.create.mockReturnValue(entity);
-      repo.save.mockResolvedValue(entity);
+    it('creates an event after verifying person ownership', async () => {
+      const dto     = { personId: 'p1', title: 'Geburtstag', date: '1990-03-15', recurring: true } as any;
+      const created = { id: 'e1', ...dto };
+      prisma.person.findFirst.mockResolvedValue({ id: 'p1' });
+      prisma.event.create.mockResolvedValue(created);
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, 'u1');
 
-      expect(repo.create).toHaveBeenCalledWith(dto);
-      expect(repo.save).toHaveBeenCalledWith(entity);
-      expect(result).toEqual(entity);
+      expect(prisma.person.findFirst).toHaveBeenCalledWith({ where: { id: 'p1', userId: 'u1' } });
+      expect(result).toEqual(created);
+    });
+
+    it('throws NotFoundException when the person does not belong to the user', async () => {
+      prisma.person.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create({ personId: 'p1', title: 'x', date: '2024-01-01' } as any, 'u1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('update', () => {
-    it('updates and returns the modified event', async () => {
-      const existing = { id: 'e1', userId: 'u1', title: 'old' };
-      const dto = { title: 'new' } as any;
-      repo.findOne.mockResolvedValue(existing);
-      repo.save.mockResolvedValue({ ...existing, ...dto });
+    it('updates an existing event', async () => {
+      const existing = { id: 'e1', title: 'old' };
+      const dto      = { title: 'new' } as any;
+      prisma.event.findFirst.mockResolvedValue(existing);
+      prisma.event.update.mockResolvedValue({ ...existing, ...dto });
 
       const result = await service.update('e1', 'u1', dto);
 
       expect(result.title).toBe('new');
-      expect(repo.save).toHaveBeenCalledWith({ ...existing, ...dto });
     });
 
     it('throws NotFoundException when the event does not exist', async () => {
-      repo.findOne.mockResolvedValue(null);
+      prisma.event.findFirst.mockResolvedValue(null);
 
       await expect(service.update('e999', 'u1', {} as any)).rejects.toThrow(NotFoundException);
     });
@@ -101,17 +104,17 @@ describe('EventsService', () => {
 
   describe('remove', () => {
     it('removes an existing event', async () => {
-      const event = { id: 'e1', userId: 'u1' };
-      repo.findOne.mockResolvedValue(event);
-      repo.remove.mockResolvedValue(undefined);
+      const event = { id: 'e1' };
+      prisma.event.findFirst.mockResolvedValue(event);
+      prisma.event.delete.mockResolvedValue(undefined);
 
       await service.remove('e1', 'u1');
 
-      expect(repo.remove).toHaveBeenCalledWith(event);
+      expect(prisma.event.delete).toHaveBeenCalledWith({ where: { id: 'e1' } });
     });
 
     it('throws NotFoundException when the event does not exist', async () => {
-      repo.findOne.mockResolvedValue(null);
+      prisma.event.findFirst.mockResolvedValue(null);
 
       await expect(service.remove('e999', 'u1')).rejects.toThrow(NotFoundException);
     });

@@ -55,14 +55,14 @@ describe('EventsController', () => {
   });
 
   describe('create', () => {
-    it('delegates the DTO to the service and returns the created event', async () => {
-      const dto    = { personId: 'p1', userId: 'u1', title: 'Geburtstag', date: '1990-03-15', recurring: true } as any;
+    it('delegates the DTO and userId to the service and returns the created event', async () => {
+      const dto    = { personId: 'p1', title: 'Geburtstag', date: '1990-03-15', recurring: true } as any;
       const created = { id: 'e1', ...dto };
       service.create.mockResolvedValue(created);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, 'u1');
 
-      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(service.create).toHaveBeenCalledWith(dto, 'u1');
       expect(result).toEqual(created);
     });
   });

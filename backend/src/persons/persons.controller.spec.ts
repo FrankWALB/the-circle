@@ -76,14 +76,14 @@ describe('PersonsController', () => {
   });
 
   describe('create', () => {
-    it('delegates the DTO to the service and returns the created person', async () => {
-      const dto    = { userId: 'u1', name: 'Bob' } as any;
-      const created = { id: '2', ...dto };
+    it('delegates the DTO and userId to the service and returns the created person', async () => {
+      const dto    = { name: 'Bob' } as any;
+      const created = { id: '2', userId: 'u1', name: 'Bob' };
       service.create.mockResolvedValue(created);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, 'u1');
 
-      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(service.create).toHaveBeenCalledWith(dto, 'u1');
       expect(result).toEqual(created);
     });
   });
