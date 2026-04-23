@@ -3,16 +3,18 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { db } from '../db/circle-db';
 import { Person, Note, Fact, CircleEvent, PersonWithRelations, SyncQueueEntry } from '../db/models';
+import { UserService } from '../../services/user.service';
 import { v4 as uuid } from 'uuid';
-
-// User is identified by a fixed local ID for MVP; replaced by JWT sub in auth phase.
-const USER_ID = 'default-user';
 
 @Injectable({ providedIn: 'root' })
 export class SyncService {
   private readonly http = inject(HttpClient);
+  private readonly userService = inject(UserService);
   private readonly base = '/api';
-  private readonly headers = { 'x-user-id': USER_ID };
+
+  private get headers() {
+    return { 'x-user-id': this.userService.userId };
+  }
 
   // ── Local CRUD (offline-first) ─────────────────────────────────────────────
 
@@ -35,7 +37,7 @@ export class SyncService {
     const now = new Date().toISOString();
     const person: Person = {
       id: uuid(),
-      userId: USER_ID,
+      userId: this.userService.userId,
       name: data.name ?? '',
       nickname: data.nickname,
       occupation: data.occupation,

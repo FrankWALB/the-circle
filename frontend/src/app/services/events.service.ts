@@ -34,7 +34,9 @@ export class EventsService {
       try {
         const saved = await this.http.post<CircleEvent>(`${environment.apiUrl}/events`, event).toPromise();
         if (saved) await db.events.put({ ...saved, synced: true });
-      } catch {}
+      } catch (err) {
+        console.warn('[EventsService] create sync failed:', err);
+      }
     }
     return event;
   }
@@ -43,8 +45,10 @@ export class EventsService {
     await db.events.delete(id);
     if (navigator.onLine) {
       try {
-        await this.http.delete(`${environment.apiUrl}/events/${id}?userId=${this.userService.userId}`).toPromise();
-      } catch {}
+        await this.http.delete(`${environment.apiUrl}/events/${id}`).toPromise();
+      } catch (err) {
+        console.warn('[EventsService] delete sync failed:', err);
+      }
     }
   }
 

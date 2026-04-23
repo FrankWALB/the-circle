@@ -33,7 +33,9 @@ export class FactsService {
       try {
         const saved = await this.http.post<Fact>(`${environment.apiUrl}/facts`, fact).toPromise();
         if (saved) await db.facts.put({ ...saved, synced: true });
-      } catch {}
+      } catch (err) {
+        console.warn('[FactsService] create sync failed:', err);
+      }
     }
     return fact;
   }
@@ -42,8 +44,10 @@ export class FactsService {
     await db.facts.delete(id);
     if (navigator.onLine) {
       try {
-        await this.http.delete(`${environment.apiUrl}/facts/${id}?userId=${this.userService.userId}`).toPromise();
-      } catch {}
+        await this.http.delete(`${environment.apiUrl}/facts/${id}`).toPromise();
+      } catch (err) {
+        console.warn('[FactsService] delete sync failed:', err);
+      }
     }
   }
 

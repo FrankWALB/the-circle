@@ -24,10 +24,9 @@ export class SyncService {
   }
 
   private async pullPersons(): Promise<void> {
-    const userId = this.userService.userId;
     try {
       const persons: any[] = await firstValueFrom(
-        this.http.get<any[]>(`${environment.apiUrl}/persons?userId=${userId}`)
+        this.http.get<any[]>(`${environment.apiUrl}/persons`)
       );
       for (const p of persons) {
         await db.persons.put({ ...p, synced: true });
@@ -38,6 +37,8 @@ export class SyncService {
           await db.events.put({ ...e, synced: true });
         }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('[SyncService] pull failed:', err);
+    }
   }
 }
