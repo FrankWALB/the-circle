@@ -1,5 +1,5 @@
 FROM node:22-alpine AS builder
-RUN npm install -g npm@latest
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
