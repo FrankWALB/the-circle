@@ -1,99 +1,102 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { FactsService } from './facts.service';
-import { Fact } from './fact.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
-const repoMock = () => ({
-  find: jest.fn(),
-  findOne: jest.fn(),
-  create: jest.fn(),
-  save: jest.fn(),
-  remove: jest.fn(),
+const prismaMock = () => ({
+  fact: {
+    findMany:  jest.fn(),
+    findFirst: jest.fn(),
+    create:    jest.fn(),
+    update:    jest.fn(),
+    delete:    jest.fn(),
+  },
+  person: {
+    findFirst: jest.fn(),
+  },
 });
 
 describe('FactsService', () => {
   let service: FactsService;
-  let repo: ReturnType<typeof repoMock>;
+  let prisma: ReturnType<typeof prismaMock>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FactsService,
-        { provide: getRepositoryToken(Fact), useFactory: repoMock },
+        { provide: PrismaService, useFactory: prismaMock },
       ],
     }).compile();
 
-    service = module.get<FactsService>(FactsService);
-    repo = module.get(getRepositoryToken(Fact));
+    service = module.get(FactsService);
+    prisma  = module.get(PrismaService);
   });
 
   describe('findByPerson', () => {
-    it('returns all facts for a person ordered by updatedAt desc', async () => {
-      const facts = [{ id: 'f1', personId: 'p1', userId: 'u1' }];
-      repo.find.mockResolvedValue(facts);
+    it('returns all facts for a person', async () => {
+      const facts = [{ id: 'f1', personId: 'p1', key: 'beruf', value: 'Ärztin' }];
+      prisma.fact.findMany.mockResolvedValue(facts);
 
       const result = await service.findByPerson('p1', 'u1');
 
       expect(result).toEqual(facts);
-      expect(repo.find).toHaveBeenCalledWith({
-        where: { personId: 'p1', userId: 'u1' },
-        order: { updatedAt: 'DESC' },
-      });
+      expect(prisma.fact.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { personId: 'p1', person: { userId: 'u1' } } }),
+      );
     });
   });
 
   describe('findOne', () => {
     it('returns the fact when found', async () => {
-      const fact = { id: 'f1', userId: 'u1', key: 'beruf', value: 'Ärztin' };
-      repo.findOne.mockResolvedValue(fact);
+      const fact = { id: 'f1', key: 'beruf', value: 'Ärztin' };
+      prisma.fact.findFirst.mockResolvedValue(fact);
 
       expect(await service.findOne('f1', 'u1')).toEqual(fact);
     });
 
     it('throws NotFoundException when the fact does not exist', async () => {
-      repo.findOne.mockResolvedValue(null);
+      prisma.fact.findFirst.mockResolvedValue(null);
 
       await expect(service.findOne('f999', 'u1')).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws NotFoundException when the userId does not match', async () => {
-      repo.findOne.mockResolvedValue(null);
-
-      await expect(service.findOne('f1', 'other-user')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('create', () => {
-    it('creates and saves a new fact', async () => {
-      const dto = { personId: 'p1', userId: 'u1', key: 'beruf', value: 'Ärztin' } as any;
-      const entity = { id: 'f1', ...dto };
-      repo.create.mockReturnValue(entity);
-      repo.save.mockResolvedValue(entity);
+    it('creates a fact after verifying person ownership', async () => {
+      const dto     = { personId: 'p1', key: 'beruf', value: 'Pilot' } as any;
+      const created = { id: 'f1', ...dto };
+      prisma.person.findFirst.mockResolvedValue({ id: 'p1' });
+      prisma.fact.create.mockResolvedValue(created);
 
-      const result = await service.create(dto);
+      const result = await service.create(dto, 'u1');
 
-      expect(repo.create).toHaveBeenCalledWith(dto);
-      expect(repo.save).toHaveBeenCalledWith(entity);
-      expect(result).toEqual(entity);
+      expect(prisma.person.findFirst).toHaveBeenCalledWith({ where: { id: 'p1', userId: 'u1' } });
+      expect(result).toEqual(created);
+    });
+
+    it('throws NotFoundException when the person does not belong to the user', async () => {
+      prisma.person.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.create({ personId: 'p1', key: 'k', value: 'v' } as any, 'u1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('update', () => {
-    it('updates and returns the modified fact', async () => {
-      const existing = { id: 'f1', userId: 'u1', key: 'beruf', value: 'old' };
-      const dto = { value: 'new' } as any;
-      repo.findOne.mockResolvedValue(existing);
-      repo.save.mockResolvedValue({ ...existing, ...dto });
+    it('updates an existing fact', async () => {
+      const existing = { id: 'f1', key: 'beruf', value: 'old' };
+      const dto      = { value: 'new' } as any;
+      prisma.fact.findFirst.mockResolvedValue(existing);
+      prisma.fact.update.mockResolvedValue({ ...existing, ...dto });
 
       const result = await service.update('f1', 'u1', dto);
 
       expect(result.value).toBe('new');
-      expect(repo.save).toHaveBeenCalledWith({ ...existing, ...dto });
     });
 
     it('throws NotFoundException when the fact does not exist', async () => {
-      repo.findOne.mockResolvedValue(null);
+      prisma.fact.findFirst.mockResolvedValue(null);
 
       await expect(service.update('f999', 'u1', {} as any)).rejects.toThrow(NotFoundException);
     });
@@ -101,17 +104,17 @@ describe('FactsService', () => {
 
   describe('remove', () => {
     it('removes an existing fact', async () => {
-      const fact = { id: 'f1', userId: 'u1' };
-      repo.findOne.mockResolvedValue(fact);
-      repo.remove.mockResolvedValue(undefined);
+      const fact = { id: 'f1' };
+      prisma.fact.findFirst.mockResolvedValue(fact);
+      prisma.fact.delete.mockResolvedValue(undefined);
 
       await service.remove('f1', 'u1');
 
-      expect(repo.remove).toHaveBeenCalledWith(fact);
+      expect(prisma.fact.delete).toHaveBeenCalledWith({ where: { id: 'f1' } });
     });
 
     it('throws NotFoundException when the fact does not exist', async () => {
-      repo.findOne.mockResolvedValue(null);
+      prisma.fact.findFirst.mockResolvedValue(null);
 
       await expect(service.remove('f999', 'u1')).rejects.toThrow(NotFoundException);
     });

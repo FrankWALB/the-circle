@@ -55,14 +55,14 @@ describe('FactsController', () => {
   });
 
   describe('create', () => {
-    it('delegates the DTO to the service and returns the created fact', async () => {
-      const dto    = { personId: 'p1', userId: 'u1', key: 'beruf', value: 'Pilot' } as any;
+    it('delegates the DTO and userId to the service and returns the created fact', async () => {
+      const dto    = { personId: 'p1', key: 'beruf', value: 'Pilot' } as any;
       const created = { id: 'f1', ...dto };
       service.create.mockResolvedValue(created);
 
-      const result = await controller.create(dto);
+      const result = await controller.create(dto, 'u1');
 
-      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(service.create).toHaveBeenCalledWith(dto, 'u1');
       expect(result).toEqual(created);
     });
   });
